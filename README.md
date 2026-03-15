@@ -55,6 +55,22 @@ Service Accunt (SA).  Good practice s: un SA por serviciio , si una se compromet
 
 
 
+-- parte final --- 
+
+Hora 1  → Entorno GCP                (base para todo lo demás)
+Hora 2  → IAM + Secret Manager       (seguridad base — sin esto nada es seguro)
+Hora 3  → BigQuery Medallion         (dónde viven los datos)
+Hora 4  → Pub/Sub                    (cómo entran los datos)
+Hora 5  → Dataflow / Beam parte 1    (cómo se mueven los datos)
+Hora 6  → Dataflow / Beam parte 2    (casos avanzados y errores)
+Hora 7  → Cloud DLP                  (cómo se protegen los datos — GDPR)
+Hora 8  → Cloud Run + Scheduler      (cómo se exponen y orquestan los servicios)
+Hora 9  → Observabilidad             (cómo sabes que todo funciona)
+Hora 10 → CI/CD + Terraform          (cómo se despliega de forma segura)
+
+
+
+
 
 
 

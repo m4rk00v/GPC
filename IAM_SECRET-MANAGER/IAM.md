@@ -261,6 +261,12 @@ gcloud projects get-iam-policy $PROJECT_ID \
   --format="table(bindings.role)"
 ```
 
+gcloud projects get-iam-policy project-dev-490218 \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:sa-pipeline@" \
+  --format="table(bindings.role)"
+
+
 ## Por qué separar (lo que evitas)
 
 | Si usas 1 SA para todo | Con 13 SA separadas |
@@ -309,6 +315,13 @@ git push -u origin main
 > pero `sa-pipeline` está definida en los archivos `.tf` que el pipeline ejecuta.
 > Solución: crear `sa-pipeline` manualmente una sola vez. Las otras 12 SA las crea el pipeline.
 
+> **IMPORTANTE:** Después de crear sa-pipeline manualmente, hay que importarla al
+> estado de Terraform para que no intente crearla de nuevo y falle con `alreadyExists`:
+> ```bash
+> cd infra/
+> terraform import "google_service_account.sa_pipeline" "projects/project-dev-490218/serviceAccounts/sa-pipeline@project-dev-490218.iam.gserviceaccount.com"
+> ```
+
 ```bash
 # Crear sa-pipeline manualmente
 gcloud iam service-accounts create sa-pipeline --display-name="Pipeline CI/CD"
@@ -328,6 +341,9 @@ gcloud services enable iamcredentials.googleapis.com
 ```bash
 gcloud iam workload-identity-pools create "github-pool" --location="global" --display-name="GitHub Actions Pool"
 ```
+
+> **Nota:** El provider requiere `--attribute-condition` para restringir el acceso
+> solo a tu repo. Sin esta opción falla con `INVALID_ARGUMENT`.
 
 ```bash
 gcloud iam workload-identity-pools providers create-oidc "github-provider" --location="global" --workload-identity-pool="github-pool" --display-name="GitHub Provider" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" --attribute-condition="assertion.repository=='m4rk00v/GPC'" --issuer-uri="https://token.actions.githubusercontent.com"
@@ -356,10 +372,24 @@ gcloud iam workload-identity-pools providers describe github-provider --location
 
 | Orden | Qué | Dónde |
 |---|---|---|
-| 1 | Crear Workload Identity Pool + Provider | Terminal (gcloud) |
-| 2 | Crear secretos en GitHub | GitHub web |
-| 3 | Push al repo | Terminal (git) |
-| 4 | El pipeline corre automáticamente | GitHub Actions |
+| 1 | Crear sa-pipeline manualmente | Terminal (gcloud) |
+| 2 | Importar sa-pipeline al estado de Terraform | Terminal (terraform import) |
+| 3 | Crear Workload Identity Pool + Provider | Terminal (gcloud) |
+| 4 | Vincular sa-pipeline con GitHub | Terminal (gcloud) |
+| 5 | Crear secretos en GitHub | GitHub web |
+| 6 | Habilitar GitHub Actions | GitHub web |
+| 7 | Push al repo | Terminal (git) |
+| 8 | El pipeline corre automáticamente | GitHub Actions |
+
+### Errores comunes
+
+| Error | Causa | Solución |
+|---|---|---|
+| `failed to generate Google Cloud federated token` | Workload Identity Pool/Provider no existe en GCP | Ejecutar pasos 3b y 3c |
+| `INVALID_ARGUMENT: The attribute condition must reference one of the provider's claims` | Falta `--attribute-condition` al crear el provider | Agregar `--attribute-condition="assertion.repository=='m4rk00v/GPC'"` |
+| `Service account sa-pipeline already exists` | sa-pipeline fue creada manualmente pero no importada al estado | Ejecutar `terraform import` (ver paso 3a) |
+| `invalid character 'y' looking for beginning of value` | Se usó `GOOGLE_CREDENTIALS` con un access token en vez de JSON | Usar `GOOGLE_OAUTH_ACCESS_TOKEN` o hacer `unset GOOGLE_CREDENTIALS` |
+| `zsh: no such file or directory` con `@` en el path | zsh interpreta el `@` | Poner el path entre comillas dobles |
 
 ## Paso 4 — Configurar secretos en GitHub (paso a paso en la web)
 
