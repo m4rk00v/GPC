@@ -286,7 +286,7 @@ gcloud projects get-iam-policy $PROJECT_ID \
 
 ```bash
 cd /Users/appleuser/Desktop/GPC
-git remote add origin https://github.com/TU_USUARIO/GPC.git
+git remote add origin https://github.com/m4rk00v/GPC.git
 git add .
 git commit -m "initial commit"
 git push -u origin main
@@ -298,35 +298,68 @@ git push -u origin main
 > `iam.disableServiceAccountKeyCreation` activa. Workload Identity Federation
 > es el método recomendado por Google — no hay credenciales que puedan filtrarse.
 
-Ejecutar estos comandos en tu terminal:
+> **IMPORTANTE:** Este paso DEBE ejecutarse ANTES de hacer push al repo.
+> Si no se ejecuta, el pipeline de GitHub fallará con el error:
+> `failed to generate Google Cloud federated token ... The target service
+> indicated by the "audience" parameters is invalid`
+
+### Paso 3a — Crear sa-pipeline manualmente (prerrequisito)
+
+> **Problema huevo-gallina:** El pipeline necesita `sa-pipeline` para autenticarse,
+> pero `sa-pipeline` está definida en los archivos `.tf` que el pipeline ejecuta.
+> Solución: crear `sa-pipeline` manualmente una sola vez. Las otras 12 SA las crea el pipeline.
 
 ```bash
-PROJECT_ID=project-dev-490218
-PROJECT_NUMBER=436908511099
+# Crear sa-pipeline manualmente
+gcloud iam service-accounts create sa-pipeline --display-name="Pipeline CI/CD"
 
-# 1. Habilitar la API necesaria
-gcloud services enable iamcredentials.googleapis.com
-
-# 2. Crear pool de identidad
-gcloud iam workload-identity-pools create "github-pool" \
-  --location="global" \
-  --display-name="GitHub Actions Pool"
-
-# 3. Crear provider OIDC (conecta con GitHub)
-gcloud iam workload-identity-pools providers create-oidc "github-provider" \
-  --location="global" \
-  --workload-identity-pool="github-pool" \
-  --display-name="GitHub Provider" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --issuer-uri="https://token.actions.githubusercontent.com"
-
-# 4. Dar permiso a tu repo para usar sa-pipeline
-# IMPORTANTE: cambia TU_USUARIO por tu usuario real de GitHub
-gcloud iam service-accounts add-iam-policy-binding \
-  sa-pipeline@${PROJECT_ID}.iam.gserviceaccount.com \
-  --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/TU_USUARIO/GPC"
+# Darle permisos para crear recursos via Terraform
+for role in roles/cloudbuild.builds.editor roles/storage.admin roles/run.admin roles/iam.serviceAccountUser roles/iam.serviceAccountAdmin roles/resourcemanager.projectIamAdmin roles/secretmanager.admin; do gcloud projects add-iam-policy-binding project-dev-490218 --member="serviceAccount:sa-pipeline@project-dev-490218.iam.gserviceaccount.com" --role="$role"; done
 ```
+
+### Paso 3b — Crear Workload Identity Pool + Provider
+
+Ejecutar estos comandos en tu terminal **uno por uno**:
+
+```bash
+gcloud services enable iamcredentials.googleapis.com
+```
+
+```bash
+gcloud iam workload-identity-pools create "github-pool" --location="global" --display-name="GitHub Actions Pool"
+```
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc "github-provider" --location="global" --workload-identity-pool="github-pool" --display-name="GitHub Provider" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" --attribute-condition="assertion.repository=='m4rk00v/GPC'" --issuer-uri="https://token.actions.githubusercontent.com"
+```
+
+### Paso 3c — Vincular sa-pipeline con GitHub
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding "sa-pipeline@project-dev-490218.iam.gserviceaccount.com" --role="roles/iam.workloadIdentityUser" --member="principalSet://iam.googleapis.com/projects/436908511099/locations/global/workloadIdentityPools/github-pool/attribute.repository/m4rk00v/GPC"
+```
+
+### Verificar que se creó correctamente
+
+```bash
+# Ver el pool
+gcloud iam workload-identity-pools list --location="global"
+
+# Ver el provider
+gcloud iam workload-identity-pools providers list --location="global" --workload-identity-pool="github-pool"
+
+# Obtener el string completo del provider (debe coincidir con el secreto GCP_WORKLOAD_IDENTITY_PROVIDER en GitHub)
+gcloud iam workload-identity-pools providers describe github-provider --location="global" --workload-identity-pool="github-pool" --format="value(name)"
+```
+
+### Orden correcto de ejecución
+
+| Orden | Qué | Dónde |
+|---|---|---|
+| 1 | Crear Workload Identity Pool + Provider | Terminal (gcloud) |
+| 2 | Crear secretos en GitHub | GitHub web |
+| 3 | Push al repo | Terminal (git) |
+| 4 | El pipeline corre automáticamente | GitHub Actions |
 
 ## Paso 4 — Configurar secretos en GitHub (paso a paso en la web)
 
