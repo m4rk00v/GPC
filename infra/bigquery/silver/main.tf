@@ -7,7 +7,7 @@ variable "dataset_id" {
 }
 
 # ============================================
-# Silver — Dataset.  
+# Silver — Dataset.     
 # ============================================
 
 resource "google_bigquery_dataset" "silver" {

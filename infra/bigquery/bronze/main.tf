@@ -31,8 +31,9 @@ resource "google_bigquery_dataset" "bronze" {
 
 resource "google_bigquery_table" "customers_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "customers_raw"
-  project    = var.project_id
+  table_id              = "customers_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -44,8 +45,9 @@ resource "google_bigquery_table" "customers_raw" {
 
 resource "google_bigquery_table" "events_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "events_raw"
-  project    = var.project_id
+  table_id              = "events_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "event_id", type = "STRING", mode = "REQUIRED" },
@@ -58,8 +60,9 @@ resource "google_bigquery_table" "events_raw" {
 
 resource "google_bigquery_table" "orders_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "orders_raw"
-  project    = var.project_id
+  table_id              = "orders_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -71,8 +74,9 @@ resource "google_bigquery_table" "orders_raw" {
 
 resource "google_bigquery_table" "order_items_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "order_items_raw"
-  project    = var.project_id
+  table_id              = "order_items_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -84,8 +88,9 @@ resource "google_bigquery_table" "order_items_raw" {
 
 resource "google_bigquery_table" "payments_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "payments_raw"
-  project    = var.project_id
+  table_id              = "payments_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -97,8 +102,9 @@ resource "google_bigquery_table" "payments_raw" {
 
 resource "google_bigquery_table" "products_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "products_raw"
-  project    = var.project_id
+  table_id              = "products_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -110,8 +116,9 @@ resource "google_bigquery_table" "products_raw" {
 
 resource "google_bigquery_table" "inventory_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "inventory_raw"
-  project    = var.project_id
+  table_id              = "inventory_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
@@ -123,8 +130,9 @@ resource "google_bigquery_table" "inventory_raw" {
 
 resource "google_bigquery_table" "reviews_raw" {
   dataset_id = google_bigquery_dataset.bronze.dataset_id
-  table_id   = "reviews_raw"
-  project    = var.project_id
+  table_id              = "reviews_raw"
+  project               = var.project_id
+  deletion_protection   = false
 
   schema = jsonencode([
     { name = "record_id", type = "STRING", mode = "REQUIRED" },
