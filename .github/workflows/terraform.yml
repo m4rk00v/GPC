@@ -1,0 +1,43 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: [infra/**]
+  pull_request:
+    branches: [main]
+    paths: [infra/**]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Autenticar con GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -no-color
+        working-directory: infra
