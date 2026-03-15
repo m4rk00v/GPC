@@ -14,7 +14,6 @@ provider "google" {
   region  = var.region
 }
 
-resource "google_project_service" "bigquery" {
-  service            = "bigquery.googleapis.com"
-  disable_on_destroy = false
-}
+# API de BigQuery habilitada manualmente con:
+# gcloud services enable bigquery.googleapis.com
+# No se gestiona con Terraform porque sa-pipeline no tiene permiso serviceusage.services.list
