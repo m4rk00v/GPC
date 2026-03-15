@@ -211,7 +211,7 @@ resource "google_project_iam_member" "lb_certs" {
   member  = "serviceAccount:${google_service_account.sa_loadbalancer.email}"
 }
 
-# --- sa-monitoring.   ---
+# --- sa-monitoring.      ---
 resource "google_project_iam_member" "monitoring_logging" {
   project = var.project_id
   role    = "roles/logging.admin"
