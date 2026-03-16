@@ -1,0 +1,146 @@
+# ============================================
+# CI/CD — Deploy del pipeline streaming de Dataflow
+#
+# Se activa cuando cambia código en pub-sub/dataflow/
+# Flujo:
+#   1. Construye imagen Docker con el pipeline
+#   2. La sube a Artifact Registry
+#   3. Crea el Flex Template en Cloud Storage
+#   4. Lanza el pipeline en Dataflow
+#
+# Para actualizar el pipeline:
+#   - Cambiar streaming_pipeline.py
+#   - Push a main
+#   - Este workflow hace el redeploy automáticamente
+# ============================================
+
+name: Deploy Dataflow Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths: [pub-sub/dataflow/**]
+  pull_request:
+    branches: [main]
+    paths: [pub-sub/dataflow/**]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: project-dev-490218
+  REGION: europe-west1
+  REPO: dataflow-pipelines
+  IMAGE_NAME: streaming-pipeline
+  TEMPLATE_PATH: gs://project-dev-490218-dataflow-temp/templates/streaming-pipeline.json
+
+jobs:
+  # ============================================
+  # Job 1: Build + Push de la imagen Docker
+  # ============================================
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Autenticar con GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Tag de la imagen = short SHA del commit (versionado)
+      - name: Generar tag de la imagen
+        id: meta
+        run: echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      # Crear el repositorio en Artifact Registry si no existe
+      - name: Crear repositorio en Artifact Registry
+        run: |
+          gcloud artifacts repositories describe ${{ env.REPO }} \
+            --location=${{ env.REGION }} 2>/dev/null || \
+          gcloud artifacts repositories create ${{ env.REPO }} \
+            --repository-format=docker \
+            --location=${{ env.REGION }} \
+            --description="Dataflow pipeline images"
+
+      # Configurar Docker para usar Artifact Registry
+      - name: Configurar Docker auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # Construir la imagen Docker
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:latest \
+            pub-sub/dataflow/
+
+      # Subir la imagen a Artifact Registry
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:latest
+
+  # ============================================
+  # Job 2: Crear Flex Template + Lanzar pipeline
+  # Solo en merge a main (no en PRs)
+  # ============================================
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Autenticar con GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Crear el Flex Template (apunta a la imagen Docker)
+      - name: Crear Flex Template
+        run: |
+          gcloud dataflow flex-template build ${{ env.TEMPLATE_PATH }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
+            --sdk-language=PYTHON \
+            --metadata-file=pub-sub/dataflow/metadata.json
+
+      # Drain el job anterior (si existe) — termina lo pendiente y para
+      - name: Drain job anterior
+        continue-on-error: true
+        run: |
+          OLD_JOB=$(gcloud dataflow jobs list \
+            --region=${{ env.REGION }} \
+            --status=active \
+            --filter="name=ecommerce-clickevents" \
+            --format="value(id)" \
+            --limit=1)
+          if [ -n "$OLD_JOB" ]; then
+            echo "Draining old job: $OLD_JOB"
+            gcloud dataflow jobs drain "$OLD_JOB" --region=${{ env.REGION }}
+            # Esperar a que termine el drain
+            sleep 60
+          else
+            echo "No active job found"
+          fi
+
+      # Lanzar el nuevo pipeline
+      - name: Lanzar pipeline en Dataflow
+        run: |
+          gcloud dataflow flex-template run ecommerce-clickevents \
+            --template-file-gcs-location=${{ env.TEMPLATE_PATH }} \
+            --region=${{ env.REGION }} \
+            --service-account-email=sa-functions@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
+            --max-workers=2 \
+            --parameters project=${{ env.PROJECT_ID }} \
+            --parameters region=${{ env.REGION }}

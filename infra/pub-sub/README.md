@@ -188,14 +188,95 @@ Function intenta procesar
 | Source hash en ZIP name | `functions.tf` | Redeploy automático cuando cambia el código |
 | IAM a nivel de bucket | `storage.tf` | Solo sa-functions lee, solo sa-cloudrun escribe |
 
-## Dependencias
+## Dependencias y flujo entre capas
+
+### Qué hace cada componente
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  CSV sube a GCS                                                     │
+│       │                                                             │
+│       ▼                                                             │
+│  Pub/Sub → Cloud Function                                           │
+│       │                                                             │
+│       ▼                                                             │
+│  ┌─────────┐      ┌─────────┐      ┌─────────┐                     │
+│  │ BRONZE  │ ──── │ SILVER  │ ──── │  GOLD   │                     │
+│  │         │      │         │      │         │                     │
+│  │ Datos   │      │ Datos   │      │ Vistas  │                     │
+│  │ crudos  │      │ limpios │      │ (auto)  │                     │
+│  └─────────┘      └─────────┘      └─────────┘                     │
+│       ▲                ▲                ▲                           │
+│       │                │                │                           │
+│  Cloud Function   Cloud Composer    Se calculan                     │
+│  (este módulo)    (Airflow)         solas al                        │
+│  ✓ LISTO          ✗ PENDIENTE       consultar                       │
+│                                     (depende de                     │
+│                                      Silver)                        │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Quién llena cada capa
+
+| Capa | Quién la llena | Cómo | Estado |
+|---|---|---|---|
+| **Bronze** | Cloud Function `ingest-csv` | CSV sube a GCS → Pub/Sub → Function inserta JSON crudo | Listo |
+| **Silver** | Cloud Composer (Airflow) | Query SQL programado: parsea JSON de Bronze, limpia, deduplica | Pendiente |
+| **Gold** | Nadie — son vistas | Se calculan automáticamente al hacer SELECT sobre Gold | Listo (pero vacío hasta que Silver tenga datos) |
+
+### Por qué Silver no se llena automáticamente
+
+La Function **solo** escribe en Bronze (JSON crudo). La transformación a Silver requiere:
+- Parsear JSON (`JSON_VALUE`)
+- Validar tipos (STRING → TIMESTAMP, FLOAT64, etc.)
+- Deduplicar registros
+- Aplicar reglas de negocio
+
+Esto lo hace **Cloud Composer (Airflow)** con queries SQL programados.
+No se pone en la Cloud Function porque:
+
+| En la Function | En Cloud Composer |
+|---|---|
+| Si falla el parseo, pierdes el dato crudo | Bronze siempre tiene el dato (puedes reprocesar) |
+| No puedes reprocesar sin volver a subir el CSV | Puedes re-ejecutar el job de Silver cuando quieras |
+| Acoplamiento: Function hace demasiado | Separación de responsabilidades |
+| Sin orquestación: no sabes si Silver se actualizó | Airflow muestra el estado de cada job |
+
+### Orden de ejecución del pipeline completo
+
+```
+1. CSV sube a GCS                              ← manual o automático
+2. GCS notifica a Pub/Sub                      ← automático (OBJECT_FINALIZE)
+3. Function escribe en Bronze                  ← automático (Pub/Sub trigger)
+4. Cloud Composer ejecuta Bronze → Silver      ← programado (cada X horas)
+5. Gold se consulta (vistas sobre Silver)      ← on-demand (Looker, API, SQL)
+```
+
+### Dependencia entre módulos Terraform
 
 ```
 bigquery/bronze (datasets + tablas)
         │
         │ depends_on
         ▼
-pub-sub (bucket + topics + function)
+pub-sub (bucket + topics + function) ← este módulo
+        │
+        │ depends_on (futuro)
+        ▼
+cloud-composer (DAGs de Airflow: Bronze → Silver) ← PENDIENTE
+
+bigquery/silver (tablas destino de las transformaciones)
+        │
+        │ depends_on
+        ▼
+bigquery/gold (vistas que leen Silver)
 ```
 
-La función inserta en `bronze.*` — las tablas deben existir antes.
+### Próximo paso
+
+Configurar **Cloud Composer (Airflow)** para orquestar las transformaciones:
+- DAG `bronze_to_silver`: ejecuta queries SQL que parsean Bronze → Silver
+- DAG `silver_quality_check`: valida que Silver tiene datos correctos
+- Frecuencia: cada 1 hora o al detectar nuevos datos en Bronze

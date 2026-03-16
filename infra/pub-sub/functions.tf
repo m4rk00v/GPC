@@ -135,7 +135,7 @@ resource "google_cloudfunctions2_function" "ingest_csv" {
     pubsub_topic   = google_pubsub_topic.csv_uploaded.id
 
     # Retry: reintentar en caso de fallo
-    retry_policy = "RETRY"
+    retry_policy = "RETRY_POLICY_RETRY"
 
     # SA (Service Account) que Eventarc usa para invocar la function
     service_account_email = "sa-functions@${var.project_id}.iam.gserviceaccount.com"
