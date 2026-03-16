@@ -1,0 +1,26 @@
+{
+  "name": "E-commerce ClickEvents Streaming Pipeline",
+  "description": "Lee eventos de clickstream de Pub/Sub y los escribe en BigQuery Bronze (events_raw)",
+  "parameters": [
+    {
+      "name": "project",
+      "label": "GCP Project ID",
+      "helpText": "El proyecto de GCP donde correr el pipeline",
+      "isOptional": false
+    },
+    {
+      "name": "region",
+      "label": "Region",
+      "helpText": "Región de Dataflow (debe coincidir con BigQuery y Pub/Sub)",
+      "isOptional": true,
+      "defaultValue": "europe-west1"
+    },
+    {
+      "name": "service_account_email",
+      "label": "Service Account",
+      "helpText": "SA que ejecuta el pipeline",
+      "isOptional": true,
+      "defaultValue": "sa-functions@project-dev-490218.iam.gserviceaccount.com"
+    }
+  ]
+}

@@ -10,10 +10,15 @@ override.tf.json
 *_override.tf.json
 
 # Credenciales
-*.json
 sa-*.json
+*-key.json
+*-creds-*.json
 *.pem
 *.key
+
+# Permitir metadata.json y terraform lock
+!pub-sub/dataflow/metadata.json
+!infra/.terraform.lock.hcl
 
 # Google Cloud SDK (instalación local)
 gpc/
