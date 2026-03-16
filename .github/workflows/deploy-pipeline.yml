@@ -30,7 +30,7 @@ permissions:
 
 env:
   PROJECT_ID: project-dev-490218
-  REGION: europe-west1
+  REGION: us-central1
   REPO: dataflow-pipelines
   IMAGE_NAME: streaming-pipeline
   TEMPLATE_PATH: gs://project-dev-490218-dataflow-temp/templates/streaming-pipeline.json
@@ -140,7 +140,7 @@ jobs:
           gcloud dataflow flex-template run ecommerce-clickevents \
             --template-file-gcs-location=${{ env.TEMPLATE_PATH }} \
             --region=${{ env.REGION }} \
-            --worker-zone=europe-west1-c \
+            --worker-zone=us-central1-a \
             --service-account-email=sa-functions@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
             --max-workers=2 \
             --parameters project=${{ env.PROJECT_ID }} \
