@@ -1,6 +1,6 @@
 # ============================================
 # BigQuery — Módulos por capa (Bronze / Silver / Gold)
-# ============================================
+# ============================================.  
 
 module "bigquery_bronze" {
   source     = "./bigquery/bronze"
