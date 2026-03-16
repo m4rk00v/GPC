@@ -1,0 +1,21 @@
+id,name,description,category,subcategory,price,currency,sku,is_active,created_at
+prod-0001,Laptop Pro 15,Laptop Pro 15 - producto de alta calidad,Electronics,Laptops,1127.07,USD,ELE-LAP-001,true,2026-01-28T15:12:29Z
+prod-0002,Laptop Air 13,Laptop Air 13 - producto de alta calidad,Electronics,Laptops,768.68,USD,ELE-LAP-002,true,2026-01-26T14:44:21Z
+prod-0003,Laptop Gaming X,Laptop Gaming X - producto de alta calidad,Electronics,Laptops,1455.59,USD,ELE-LAP-003,true,2026-01-13T11:07:31Z
+prod-0004,Chromebook Lite,Chromebook Lite - producto de alta calidad,Electronics,Laptops,123.02,USD,ELE-LAP-004,true,2026-01-25T22:06:13Z
+prod-0005,Smartphone Ultra,Smartphone Ultra - producto de alta calidad,Electronics,Phones,312.91,USD,ELE-PHO-005,true,2026-01-02T15:33:10Z
+prod-0006,Phone Lite SE,Phone Lite SE - producto de alta calidad,Electronics,Phones,1400.22,USD,ELE-PHO-006,true,2026-01-16T20:06:00Z
+prod-0007,Phone Pro Max,Phone Pro Max - producto de alta calidad,Electronics,Phones,22.52,USD,ELE-PHO-007,true,2026-01-26T12:05:14Z
+prod-0008,Mouse Wireless,Mouse Wireless - producto de alta calidad,Electronics,Accessories,990.51,USD,ELE-ACC-008,true,2026-01-17T17:33:46Z
+prod-0009,Teclado Mecanico RGB,Teclado Mecanico RGB - producto de alta calidad,Electronics,Accessories,994.94,USD,ELE-ACC-009,true,2026-01-29T04:24:14Z
+prod-0010,Webcam HD,Webcam HD - producto de alta calidad,Electronics,Accessories,344.98,USD,ELE-ACC-010,false,2026-01-04T13:34:19Z
+prod-0011,USB-C Hub,USB-C Hub - producto de alta calidad,Electronics,Accessories,102.62,USD,ELE-ACC-011,false,2026-01-26T19:45:02Z
+prod-0012,Tablet Pro 12,Tablet Pro 12 - producto de alta calidad,Electronics,Tablets,1268.59,USD,ELE-TAB-012,false,2026-01-02T02:43:19Z
+prod-0013,Tablet Mini 8,Tablet Mini 8 - producto de alta calidad,Electronics,Tablets,526.41,USD,ELE-TAB-013,false,2026-01-09T10:37:13Z
+prod-0014,Auriculares BT Pro,Auriculares BT Pro - producto de alta calidad,Electronics,Audio,79.56,USD,ELE-AUD-014,true,2026-01-20T18:33:40Z
+prod-0015,Speaker Portatil,Speaker Portatil - producto de alta calidad,Electronics,Audio,547.0,USD,ELE-AUD-015,true,2026-01-23T23:27:29Z
+prod-0016,Microfono USB,Microfono USB - producto de alta calidad,Electronics,Audio,1105.01,USD,ELE-AUD-016,true,2026-01-04T03:58:22Z
+prod-0017,Camiseta Basica,Camiseta Basica - producto de alta calidad,Clothing,Men,1187.03,USD,CLO-MEN-017,true,2026-01-13T16:52:59Z
+prod-0018,Jeans Slim,Jeans Slim - producto de alta calidad,Clothing,Men,867.91,USD,CLO-MEN-018,true,2026-01-07T01:43:45Z
+prod-0019,Chaqueta Casual,Chaqueta Casual - producto de alta calidad,Clothing,Men,705.13,USD,CLO-MEN-019,true,2026-01-11T09:56:27Z
+prod-0020,Blusa Elegante,Blusa Elegante - producto de alta calidad,Clothing,Women,844.65,USD,CLO-WOM-020,true,2026-01-21T05:14:44Z
