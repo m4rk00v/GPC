@@ -140,6 +140,7 @@ jobs:
           gcloud dataflow flex-template run ecommerce-clickevents \
             --template-file-gcs-location=${{ env.TEMPLATE_PATH }} \
             --region=${{ env.REGION }} \
+            --worker-zone=europe-west1-c \
             --service-account-email=sa-functions@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
             --max-workers=2 \
             --parameters project=${{ env.PROJECT_ID }} \
