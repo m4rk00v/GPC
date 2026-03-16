@@ -12,7 +12,7 @@
 # ============================================
 
 # Imagen base: Apache Beam SDK para Python 3.12
-# Incluye Beam + dependencias de GCP preinstaladas.     
+# Incluye Beam + dependencias de GCP preinstaladas.       
 FROM apache/beam_python3.12_sdk:2.71.0
 
 # Copiar dependencias e instalar
