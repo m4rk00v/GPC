@@ -113,7 +113,7 @@ jobs:
           gcloud dataflow flex-template build ${{ env.TEMPLATE_PATH }} \
             --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
             --sdk-language=PYTHON \
-            --metadata-file=pub-sub/dataflow/metadata.json
+            --metadata-file=${{ github.workspace }}/pub-sub/dataflow/metadata.json
 
       # Drain el job anterior (si existe) — termina lo pendiente y para
       - name: Drain job anterior
