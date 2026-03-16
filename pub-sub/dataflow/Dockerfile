@@ -8,7 +8,7 @@
 #   docker build -t europe-west1-docker.pkg.dev/project-dev-490218/dataflow/streaming-pipeline:latest .
 #
 # Push:
-#   docker push europe-west1-docker.pkg.dev/project-dev-490218/dataflow/streaming-pipeline:latest
+#   docker push europe-west1-docker.pkg.dev/project-dev-490218/dataflow/streaming-pipeline:latest.  
 # ============================================
 
 # Imagen base: Apache Beam SDK para Python 3.12
